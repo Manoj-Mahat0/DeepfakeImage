@@ -29,7 +29,7 @@ keras
 libclang==16.0.6
 Markdown==3.5.2
 MarkupSafe==2.1.4
-numpy==1.24.3
+numpy
 oauthlib==3.2.2
 opt-einsum==3.3.0
 packaging==23.2
@@ -52,7 +52,7 @@ tensorflow
 termcolor==2.4.0
 typing_extensions==4.9.0
 urllib3==2.1.0
-uvicorn==0.26.0
+uvicorn
 Werkzeug==3.0.1
 wrapt==1.16.0
 zipp==3.17.0
