@@ -1,3 +1,4 @@
+pip==23.3.1
 absl-py==2.1.0
 annotated-types==0.6.0
 anyio==4.2.0
