@@ -48,7 +48,7 @@ six
 sniffio
 starlette
 tensorflow
-tensorflow-gpu
+tensorflow-gpu==2.12.0
 termcolor
 typing_extensions
 urllib3
