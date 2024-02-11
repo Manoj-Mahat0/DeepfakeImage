@@ -1,3 +1,6 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Set TensorFlow logging level to suppress INFO messages
+
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 import numpy as np
