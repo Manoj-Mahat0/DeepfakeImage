@@ -1,5 +1,5 @@
-from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import JSONResponse
+from flask import Flask, request, jsonify
+from werkzeug.utils import secure_filename
 import numpy as np
 from keras.preprocessing.image import img_to_array
 from keras.models import load_model
@@ -9,7 +9,7 @@ import cv2
 import random
 import os
 
-app = FastAPI()
+app = Flask(__name__)
 
 # Load the saved model
 model = load_model('nagma_model.h5')
@@ -36,51 +36,60 @@ def extract_frames(video_path, num_frames=5):
     return frames
 
 # Prediction endpoint for video
-@app.post("/predict_video")
-async def predict_video(file: UploadFile = File(...)):
-    # Save the video file temporarily
-    video_contents = await file.read()
-    video_path = "temp_video.mp4"
-    with open(video_path, "wb") as video_file:
-        video_file.write(video_contents)
+@app.route("/predict_video", methods=["POST"])
+def predict_video():
+    # Check if the post request has the file part
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
 
-    # Extract 5 random frames from the video
-    video_frames = extract_frames(video_path, num_frames=5)
+    file = request.files['file']
 
-    # Perform prediction for each frame
-    predictions = []
+    # If user does not select file, browser also
+    # submit an empty part without filename
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
 
-    for frame in video_frames:
-        # Convert the frame to grayscale
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    if file:
+        # Save the video file temporarily
+        video_path = "temp_video.mp4"
+        file.save(video_path)
 
-        # Resize the grayscale image
-        resized_img = cv2.resize(gray_frame, (48, 48))
+        # Extract 5 random frames from the video
+        video_frames = extract_frames(video_path, num_frames=5)
 
-        # Convert image to numpy array
-        img_array = img_to_array(resized_img)
+        # Perform prediction for each frame
+        predictions = []
 
-        # Reshape the image for model input
-        img_array = img_array.reshape(1, 48, 48, 1)  # Grayscale image, hence 1 channel
+        for frame in video_frames:
+            # Convert the frame to grayscale
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # Normalize the image values if necessary (depends on your model)
-        img_array = img_array / 255.0
+            # Resize the grayscale image
+            resized_img = cv2.resize(gray_frame, (48, 48))
 
-        # Make the prediction
-        prediction = model.predict(img_array)
-        predicted_label = int(np.argmax(prediction))
-        predictions.append(predicted_label)
+            # Convert image to numpy array
+            img_array = img_to_array(resized_img)
 
-    # Count how many times frames are classified as "Real"
-    num_real_frames = predictions.count(1)
+            # Reshape the image for model input
+            img_array = img_array.reshape(1, 48, 48, 1)  # Grayscale image, hence 1 channel
 
-    result = {"total_frames": len(predictions), "num_real_frames": num_real_frames}
-    
-    # Clean up: Remove temporary video file
-    os.remove(video_path)
+            # Normalize the image values if necessary (depends on your model)
+            img_array = img_array / 255.0
 
-    return JSONResponse(content=result)
+            # Make the prediction
+            prediction = model.predict(img_array)
+            predicted_label = int(np.argmax(prediction))
+            predictions.append(predicted_label)
+
+        # Count how many times frames are classified as "Real"
+        num_real_frames = predictions.count(1)
+
+        result = {"total_frames": len(predictions), "num_real_frames": num_real_frames}
+
+        # Clean up: Remove temporary video file
+        os.remove(video_path)
+
+        return jsonify(result), 200
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000)
