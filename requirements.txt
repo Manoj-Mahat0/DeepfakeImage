@@ -2,3 +2,4 @@ Flask
 Keras
 opencv-python
 numpy
+tensorflow
